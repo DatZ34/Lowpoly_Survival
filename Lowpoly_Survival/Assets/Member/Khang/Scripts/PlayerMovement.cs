@@ -66,15 +66,28 @@ public class PlayerMovement : HumanoiAnimationController
         camFwd.Normalize(); camRight.Normalize();
 
         Vector3 moveDir = camFwd * z + camRight * x;
-        float speed = Input.GetKey(KeyCode.LeftShift) ? sprintSpeed : runSpeed;
-
+        float speed = moveSpeed;
+        if (moveDir.magnitude < 0.1f)
+        {
+            speed = 0; //đứng yên
+        }
+        else if (Input.GetKey(KeyCode.LeftShift))
+        {
+            speed = sprintSpeed; //chạy nước rút
+        }
+        else if (z > 0.1f || x != 0)
+        {
+            speed = moveSpeed;
+        }
         if (moveDir.magnitude > 0.1f)
         {
+            // Di chuyển nhân vật
             controller.Move(moveDir * speed * Time.deltaTime);
+
+            // Xoay mặt nhân vật theo hướng di chuyển
             Quaternion targetRot = Quaternion.LookRotation(moveDir);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSpeed * Time.deltaTime);
         }
-
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
     }    
@@ -93,17 +106,16 @@ public class PlayerMovement : HumanoiAnimationController
         float targetX = Input.GetAxis("Horizontal");
         float targetZ = Input.GetAxis("Vertical");
 
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            targetX *= 2;
-            targetZ *= 2;
-        }
-
-        currentVelX = Mathf.SmoothDamp(currentVelX, targetX, ref velXSmooth, 0.1f);
-        currentVelZ = Mathf.SmoothDamp(currentVelZ, targetZ, ref velZSmooth, 0.1f);
+        float multiplier = Input.GetKey(KeyCode.LeftShift) ? 4.0f : 1.0f;
+        
+        currentVelX = Mathf.SmoothDamp(currentVelX, targetX * multiplier, ref velXSmooth, 0.1f);
+        currentVelZ = Mathf.SmoothDamp(currentVelZ, targetZ * multiplier, ref velZSmooth, 0.1f);
 
         SetVelocity(currentVelX, currentVelZ);
+
+        float currentSpeed = new Vector2(currentVelX, currentVelZ).magnitude;
+        SetSpeed(currentSpeed);
+
         SetGrounded(isGrounded);
-        SetSpeed(new Vector2(currentVelX, currentVelZ).magnitude);
     }    
 }
